@@ -15,7 +15,6 @@ interface OrderData {
   notes?: string;
 }
 
-// Format harga ke Riel Cambodia
 function formatPrice(amount: number): string {
   return new Intl.NumberFormat('en-US', {
     minimumFractionDigits: 0,
@@ -23,7 +22,6 @@ function formatPrice(amount: number): string {
   }).format(amount);
 }
 
-// Buat message Telegram
 function createTelegramMessage(order: OrderData): string {
   const itemsList = order.items
     .map(
@@ -52,12 +50,10 @@ Order ID: \`${order.orderId}\`
   return message;
 }
 
-// Handler untuk POST request
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json() as OrderData;
 
-    // Validasi required fields
     if (
       !body.orderId ||
       !body.customerName ||
@@ -71,7 +67,6 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Get Telegram bot token dan chat ID dari environment variables
     const BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
     const CHAT_ID = process.env.TELEGRAM_CHAT_ID;
 
@@ -83,10 +78,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Buat pesan
     const message = createTelegramMessage(body);
-
-    // Kirim ke Telegram API
     const telegramUrl = `https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`;
 
     const response = await fetch(telegramUrl, {
@@ -128,7 +120,6 @@ export async function POST(request: NextRequest) {
   }
 }
 
-// Handler untuk GET request (health check)
 export async function GET() {
   return NextResponse.json({ status: 'Telegram notification API is active' });
 }
