@@ -17,6 +17,18 @@ export default function CartPage() {
     setError(null);
     try {
       await submitOrder({ tableName, items, total: totalPrice });
+
+      // Kirim notifikasi Telegram — kalau gagal, tidak menggagalkan pesanan
+      try {
+        await fetch("/api/notify-telegram", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ tableName, items, total: totalPrice }),
+        });
+      } catch (notifyErr) {
+        console.error("Gagal kirim notifikasi Telegram:", notifyErr);
+      }
+
       setSent(true);
       setTimeout(() => {
         clearCart();

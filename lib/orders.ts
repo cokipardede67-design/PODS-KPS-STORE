@@ -8,13 +8,11 @@ export type OrderPayload = {
   total: number;
 };
 
-/**
- * Simpan order baru ke koleksi "orders" di Firestore.
- * Status awal selalu "pending" — nanti diubah staff jadi "processing" / "done".
- */
 export async function submitOrder(payload: OrderPayload) {
+  const tableId = `T-${Date.now()}`;
+
   const docRef = await addDoc(collection(db, "orders"), {
-    tableName: payload.tableName || "-",
+    tableName: payload.tableName || tableId,
     items: payload.items.map((i) => ({
       name: i.name,
       flavor: i.flavor,
@@ -27,12 +25,38 @@ export async function submitOrder(payload: OrderPayload) {
     createdAt: serverTimestamp(),
   });
 
-  // Kirim notifikasi ke Telegram — kalau gagal, tidak menggagalkan proses order
   try {
+    const orderTime = new Date().toLocaleString("id-ID", {
+      timeZone: "Asia/Bangkok",
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit",
+      hour: "2-digit",
+      minute: "2-digit",
+      second: "2-digit",
+    });
+
+    const formattedItems = payload.items.map((item) => ({
+      name: item.name,
+      quantity: item.qty,
+      price: item.price,
+    }));
+
+    const telegramPayload = {
+      orderId: docRef.id,
+      customerName: payload.tableName || tableId,
+      customerPhone: "-",
+      items: formattedItems,
+      totalPrice: payload.total,
+      currency: "KHR",
+      orderTime: orderTime,
+      notes: `Table Order - Status: pending`,
+    };
+
     await fetch("/api/notify-telegram", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(payload),
+      body: JSON.stringify(telegramPayload),
     });
   } catch (err) {
     console.error("Gagal mengirim notifikasi Telegram:", err);
